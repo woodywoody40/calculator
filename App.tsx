@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Currency, FetchStatus, HistoryItem } from './types';
-import { POPULAR_CURRENCIES, DEFAULT_FROM_CURRENCY, DEFAULT_TO_CURRENCY } from './constants';
+import { DEFAULT_FROM_CURRENCY, DEFAULT_TO_CURRENCY } from './constants';
 import { fetchLiveExchangeRate } from './services/rateService';
 import CurrencySelect from './components/CurrencySelect';
 import HistoryModal from './components/HistoryModal';
 import CalculatorKeypad from './components/CalculatorKeypad';
+import CurrencyPickerModal from './components/CurrencyPickerModal';
 
 const App: React.FC = () => {
   // State
@@ -19,6 +20,9 @@ const App: React.FC = () => {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  
+  // New state for currency picker modal
+  const [selectingField, setSelectingField] = useState<'from' | 'to' | null>(null);
 
   // Load History
   useEffect(() => {
@@ -85,6 +89,14 @@ const App: React.FC = () => {
   const handleSwap = () => {
     setFromCurrency(toCurrency);
     setToCurrency(fromCurrency);
+  };
+  
+  const handleCurrencySelect = (currency: Currency) => {
+    if (selectingField === 'from') {
+      setFromCurrency(currency);
+    } else if (selectingField === 'to') {
+      setToCurrency(currency);
+    }
   };
 
   const getCacheKey = (from: string, to: string) => `rate_${from}_${to}`;
@@ -247,13 +259,13 @@ const App: React.FC = () => {
 
           {/* Currency Controls Row */}
           <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
-               <CurrencySelect label="持有" selected={fromCurrency} onSelect={setFromCurrency} />
+               <CurrencySelect label="持有" selected={fromCurrency} onClick={() => setSelectingField('from')} />
                <button onClick={handleSwap} className="mt-6 w-11 h-11 rounded-full bg-[#161616] border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 hover:border-white/20 active:rotate-180 transition-all shadow-lg z-10">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                   </svg>
                </button>
-               <CurrencySelect label="目標" selected={toCurrency} onSelect={setToCurrency} />
+               <CurrencySelect label="目標" selected={toCurrency} onClick={() => setSelectingField('to')} />
           </div>
 
         </section>
@@ -268,12 +280,21 @@ const App: React.FC = () => {
            />
         </section>
 
-        {/* Absolute positioned modals to stay inside the "phone" */}
+        {/* TOP LEVEL MODALS (Ensures z-index > anything in sections) */}
+        
         <HistoryModal 
           isOpen={isHistoryOpen} 
           onClose={() => setIsHistoryOpen(false)} 
           history={history} 
           onClear={clearHistory}
+        />
+
+        <CurrencyPickerModal
+          isOpen={!!selectingField}
+          onClose={() => setSelectingField(null)}
+          onSelect={handleCurrencySelect}
+          title={selectingField === 'from' ? '選擇持有幣別' : '選擇目標幣別'}
+          selectedCurrencyCode={selectingField === 'from' ? fromCurrency.code : toCurrency.code}
         />
 
       </main>
