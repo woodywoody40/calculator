@@ -44,8 +44,8 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
   return (
     <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full select-none pb-4">
       {keys.map((key, index) => {
-        // 使用 rounded-[1.8rem] 來達到「稍微方一點」但又圓潤的視覺效果
-        let className = "keypad-btn rounded-[1.8rem] flex items-center justify-center text-2xl outline-none touch-manipulation cursor-pointer w-full h-full";
+        // 使用 rounded-2xl 讓按鍵變為圓角方形，比之前的 rounded-[1.8rem] 更方
+        let className = "keypad-btn rounded-2xl flex items-center justify-center text-2xl outline-none touch-manipulation cursor-pointer w-full h-full";
         
         if (key.type === 'operator') {
              // Dark Brownish for operators (Div, Mul, Sub, Add)
