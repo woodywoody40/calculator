@@ -7,14 +7,24 @@ interface CalculatorKeypadProps {
   onCalculate: () => void;
 }
 
+interface Key {
+  label: string;
+  type: 'special' | 'operator' | 'number' | 'equal';
+  val?: string;
+  action?: () => void;
+  isIcon?: boolean;
+  rowSpan?: number;
+  width?: string;
+}
+
 const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({ 
   onKeyPress, onDelete, onClear, onCalculate 
 }) => {
-  const keys = [
-    { label: 'C', type: 'function', action: onClear },
+  const keys: Key[] = [
+    { label: 'C', type: 'special', action: onClear },
     { label: '÷', type: 'operator', val: '/' },
     { label: '×', type: 'operator', val: '*' },
-    { label: '⌫', type: 'function', action: onDelete },
+    { label: '⌫', type: 'special', action: onDelete, isIcon: true },
     { label: '7', type: 'number', val: '7' },
     { label: '8', type: 'number', val: '8' },
     { label: '9', type: 'number', val: '9' },
@@ -31,31 +41,24 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
     { label: '.', type: 'number', val: '.' },
   ];
 
-  const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const button = event.currentTarget;
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
-    const radius = diameter / 2;
-    const rect = button.getBoundingClientRect();
-    const circle = document.createElement("span");
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${event.clientX - rect.left - radius}px`;
-    circle.style.top = `${event.clientY - rect.top - radius}px`;
-    circle.classList.add("ripple");
-    const ripple = button.getElementsByClassName("ripple")[0];
-    if (ripple) ripple.remove();
-    button.appendChild(circle);
-    setTimeout(() => circle.remove(), 600);
-  };
-
   return (
     <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full select-none">
       {keys.map((key, index) => {
-        let className = "glass-keypad-btn rounded-2xl flex items-center justify-center text-2xl font-light outline-none touch-manipulation cursor-pointer w-full h-full shadow-lg";
+        let className = "keypad-btn rounded-2xl flex items-center justify-center text-2xl outline-none touch-manipulation cursor-pointer w-full h-full";
         
-        if (key.type === 'operator') className += " glass-keypad-operator font-medium text-xl"; 
-        else if (key.type === 'function') className += " text-zinc-600 text-lg font-medium";
-        else if (key.type === 'equal') className = "glass-keypad-btn glass-keypad-action rounded-[1.8rem] flex items-center justify-center text-4xl outline-none cursor-pointer w-full h-full shadow-2xl transition-all active:scale-95";
-        else className += " text-zinc-300 font-medium";
+        if (key.type === 'operator') {
+             // Brownish buttons for operators
+             className += " bg-[#2a1f18] text-[#d97746] font-normal"; 
+        } else if (key.type === 'special') {
+             // Top row helper buttons
+             className += " bg-[#1c1c1c] text-zinc-400 font-normal";
+        } else if (key.type === 'equal') {
+             // Main action button
+             className += " bg-[#d95628] text-white text-4xl shadow-lg";
+        } else {
+             // Numbers
+             className += " bg-[#1c1c1c] text-zinc-200 font-normal";
+        }
 
         const style: React.CSSProperties = {};
         if (key.rowSpan) style.gridRow = `span ${key.rowSpan}`;
@@ -65,10 +68,14 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
           <button
             key={index}
             style={style}
-            onClick={(e) => { createRipple(e); key.action ? key.action() : onKeyPress(key.val!); }}
+            onClick={() => { key.action ? key.action() : onKeyPress(key.val!); }}
             className={className}
           >
-            {key.label}
+            {key.isIcon ? (
+                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
+                </svg>
+            ) : key.label}
           </button>
         );
       })}
