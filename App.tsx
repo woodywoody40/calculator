@@ -18,6 +18,9 @@ const App: React.FC = () => {
   const [swapRotation, setSwapRotation] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // 用於防止重複存檔的 Ref
+  const lastSavedRef = useRef<string>('');
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('conversionHistory');
@@ -51,7 +54,10 @@ const App: React.FC = () => {
   };
 
   const handleDelete = () => setInputExpression(prev => prev.length <= 1 ? '0' : prev.slice(0, -1));
-  const handleClear = () => setInputExpression('0');
+  const handleClear = () => {
+    setInputExpression('0');
+    lastSavedRef.current = ''; // 清除輸入時也重置最後存檔紀錄
+  };
   const handleCalculate = () => {
     const result = safeCalculate(inputExpression);
     setInputExpression(Number.isInteger(result) ? result.toString() : result.toFixed(2));
@@ -62,17 +68,18 @@ const App: React.FC = () => {
     setIsAnimating(true);
     setSwapRotation(prev => prev + 180);
     
-    // 短暫延遲後切換資料，配合動畫節奏
     setTimeout(() => {
       setFromCurrency(toCurrency);
       setToCurrency(fromCurrency);
       setIsAnimating(false);
+      lastSavedRef.current = ''; // 切換幣別後允許存檔
     }, 150);
   };
   
   const handleCurrencySelect = (currency: Currency) => {
     if (selectingField === 'from') setFromCurrency(currency);
     else if (selectingField === 'to') setToCurrency(currency);
+    lastSavedRef.current = ''; // 更換幣別後允許存檔
   };
 
   const getRate = useCallback(async (from: string, to: string) => {
@@ -95,7 +102,15 @@ const App: React.FC = () => {
   }, []);
 
   const saveToHistory = useCallback(() => {
+    // 檢查基本條件
     if (!rate || calculatedValue === 0) return;
+    
+    // 生成唯一標識字串：幣別組合 + 金額
+    const currentIdentity = `${fromCurrency.code}_${toCurrency.code}_${calculatedValue}`;
+    
+    // 如果跟上次存的一樣，就跳過
+    if (lastSavedRef.current === currentIdentity) return;
+
     const newItem: HistoryItem = {
       id: Date.now().toString(),
       fromCode: fromCurrency.code,
@@ -105,15 +120,21 @@ const App: React.FC = () => {
       rate: rate,
       timestamp: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
     };
-    const newHistory = [newItem, ...history].slice(0, 20);
-    setHistory(newHistory);
-    localStorage.setItem('conversionHistory', JSON.stringify(newHistory));
-  }, [rate, calculatedValue, fromCurrency, toCurrency, history]);
+
+    setHistory(prev => {
+      const newHistory = [newItem, ...prev].slice(0, 20);
+      localStorage.setItem('conversionHistory', JSON.stringify(newHistory));
+      return newHistory;
+    });
+
+    lastSavedRef.current = currentIdentity;
+  }, [rate, calculatedValue, fromCurrency.code, toCurrency.code]); // 移除對 history 的依賴
 
   useEffect(() => {
     if (status === FetchStatus.SUCCESS && rate && calculatedValue > 0) {
+      // 只有在非運算過程（沒有運算符號）且不是初始狀態時才自動存檔
       if (!/[+\-*/]/.test(inputExpression) && inputExpression !== '0') {
-        const timer = setTimeout(() => saveToHistory(), 2000); 
+        const timer = setTimeout(() => saveToHistory(), 1500); 
         return () => clearTimeout(timer);
       }
     }
@@ -136,19 +157,11 @@ const App: React.FC = () => {
         flex flex-col overflow-hidden
       ">
         
-        {/* 全域捲動容器 */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar scroll-container snap-y snap-mandatory">
           
-          {/* 第一屏：計算機主介面 (100dvh) */}
           <section className="h-[100dvh] w-full flex flex-col snap-start shrink-0 overflow-hidden">
-            
-            {/* 上半部：顯示區 (43dvh) */}
             <div className="flex-none h-[43dvh] flex flex-col px-4 pt-6 pb-2">
-              
-              {/* 整合式互動卡片 */}
               <div className="flex-1 bg-[#111111] rounded-[2.5rem] relative flex flex-col border border-white/5 shadow-2xl overflow-hidden">
-                  
-                  {/* 持有幣別區 (Clickable) */}
                   <button 
                     onClick={() => setSelectingField('from')}
                     className={`flex-1 flex flex-col justify-center px-7 active:bg-white/[0.02] transition-all duration-300 text-left ${isAnimating ? 'opacity-40 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}
@@ -165,7 +178,6 @@ const App: React.FC = () => {
                       </div>
                   </button>
 
-                  {/* 分隔線與切換按鈕 */}
                   <div className="relative h-[1px] bg-white/5 mx-7">
                       <button 
                         onClick={handleSwap}
@@ -178,7 +190,6 @@ const App: React.FC = () => {
                       </button>
                   </div>
 
-                  {/* 換算幣別區 (Clickable) */}
                   <button 
                     onClick={() => setSelectingField('to')}
                     className={`flex-1 flex flex-col justify-center px-7 active:bg-white/[0.02] transition-all duration-300 text-right ${isAnimating ? 'opacity-40 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}
@@ -195,7 +206,6 @@ const App: React.FC = () => {
                       </div>
                   </button>
 
-                  {/* 底部狀態列 */}
                   <div className="bg-zinc-900/40 px-7 py-2 flex justify-between items-center border-t border-white/[0.02]">
                       <div className="text-[10px] text-zinc-500 font-bold tracking-widest">
                         1 {fromCurrency.code} ≈ {rate ? rate.toFixed(4) : '...'} {toCurrency.code}
@@ -212,20 +222,17 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* 下半部：鍵盤區 (55dvh) */}
             <div className="flex-none h-[55dvh] w-full px-4 pb-4 pt-1 overflow-hidden">
                <CalculatorKeypad onKeyPress={handleKeyPress} onDelete={handleDelete} onClear={handleClear} onCalculate={handleCalculate} />
             </div>
 
-            {/* 滑動指示器 */}
             <div className="flex-none h-[2dvh] flex justify-center items-start opacity-10">
                <div className="w-8 h-1 bg-white rounded-full"></div>
             </div>
           </section>
 
-          {/* 第二屏：歷史紀錄 */}
           <section className="min-h-[100dvh] w-full px-6 py-12 bg-black snap-start shrink-0 border-t border-zinc-900">
-             <HistoryList history={history} onClear={() => {setHistory([]); localStorage.removeItem('conversionHistory');}} />
+             <HistoryList history={history} onClear={() => {setHistory([]); localStorage.removeItem('conversionHistory'); lastSavedRef.current = '';}} />
              {history.length === 0 && (
                <div className="py-24 text-center opacity-20 flex flex-col items-center justify-center">
                  <svg className="w-12 h-12 mb-4 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,7 +244,6 @@ const App: React.FC = () => {
           </section>
         </div>
 
-        {/* 幣別選擇彈窗 */}
         <CurrencyPickerModal 
           isOpen={!!selectingField} 
           onClose={() => setSelectingField(null)} 
