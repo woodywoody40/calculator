@@ -1,0 +1,5 @@
+{
+  "name": "旅遊匯率",
+  "description": "專為旅行者設計的即時匯率計算機。提供精確的全球匯率轉換。支援離線模式與歷史記錄。",
+  "requestFramePermissions": []
+}
