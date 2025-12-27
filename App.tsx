@@ -130,11 +130,8 @@ const App: React.FC = () => {
         flex flex-col overflow-hidden
       ">
         
-        {/* HEADER */}
-        <header className="flex-none flex justify-between items-center px-6 pt-8 pb-4">
-          <h1 className="text-xl font-normal tracking-wide text-white">
-              Woody匯率
-          </h1>
+        {/* HEADER: Removed Title, kept History button aligned right */}
+        <header className="flex-none flex justify-end items-center px-6 pt-6 pb-2">
           <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-zinc-400 hover:text-white transition-colors">
              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -142,32 +139,32 @@ const App: React.FC = () => {
           </button>
         </header>
 
-        {/* CARD DISPLAY */}
-        <section className="flex-none px-4 pb-4">
-          <div className="bg-[#111111] rounded-[2rem] p-6 relative flex flex-col justify-center min-h-[180px]">
+        {/* CARD DISPLAY: Reduced vertical padding to save space */}
+        <section className="flex-none px-4 pb-2">
+          <div className="bg-[#111111] rounded-[2rem] p-5 relative flex flex-col justify-center min-h-[160px]">
               {/* From Currency Row */}
-              <div className="flex justify-between items-end mb-6">
-                  <span className="text-2xl text-zinc-500 font-normal">{fromCurrency.code}</span>
+              <div className="flex justify-between items-end mb-4">
+                  <span className="text-xl text-zinc-500 font-normal">{fromCurrency.code}</span>
                   <div className="text-5xl font-light tracking-tight overflow-x-auto no-scrollbar whitespace-nowrap text-right pl-4 text-white">
                       {inputExpression}
                   </div>
               </div>
 
               {/* Divider */}
-              <div className="w-full h-[1px] bg-zinc-800 mb-6"></div>
+              <div className="w-full h-[1px] bg-zinc-800 mb-4"></div>
 
               {/* To Currency Row */}
               <div className="flex justify-between items-end">
-                  <span className="text-2xl text-[#d97746] font-normal">{toCurrency.code}</span>
+                  <span className="text-xl text-[#d97746] font-normal">{toCurrency.code}</span>
                   <div className="text-6xl font-normal tracking-tight text-white overflow-x-auto no-scrollbar whitespace-nowrap text-right pl-4">
                       {resultVal}
                   </div>
               </div>
 
               {/* Footer Info */}
-              <div className="mt-6 flex justify-between items-center">
+              <div className="mt-4 flex justify-between items-center">
                   <div className="bg-[#1c1c1c] px-3 py-1.5 rounded-lg">
-                      <span className="text-[11px] text-zinc-500 font-medium tracking-wide">
+                      <span className="text-[10px] text-zinc-500 font-medium tracking-wide">
                           1 {fromCurrency.code} ≈ {rate ? rate.toFixed(4) : '...'} {toCurrency.code}
                       </span>
                   </div>
@@ -180,7 +177,7 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* CONTROLS */}
+        {/* CONTROLS: Reduced bottom margin */}
         <section className="flex-none px-4 mb-2">
             <div className="flex justify-between items-end text-[10px] text-zinc-500 px-1 mb-1 font-medium tracking-wider">
                 <span>持有</span>
@@ -199,7 +196,7 @@ const App: React.FC = () => {
             </div>
         </section>
 
-        {/* KEYPAD */}
+        {/* KEYPAD: Maintained flex-1 to take up all remaining space (approx 50%+) */}
         <section className="flex-1 min-h-0 z-10 w-full px-4 pb-8 pt-2">
            <CalculatorKeypad onKeyPress={handleKeyPress} onDelete={handleDelete} onClear={handleClear} onCalculate={handleCalculate} />
         </section>
