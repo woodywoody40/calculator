@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Currency, FetchStatus, HistoryItem } from './types';
 import { DEFAULT_FROM_CURRENCY, DEFAULT_TO_CURRENCY } from './constants';
 import { fetchLiveExchangeRate } from './services/rateService';
-import CurrencySelect from './components/CurrencySelect';
 import HistoryList from './components/HistoryList';
 import CalculatorKeypad from './components/CalculatorKeypad';
 import CurrencyPickerModal from './components/CurrencyPickerModal';
@@ -16,6 +15,8 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.IDLE);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectingField, setSelectingField] = useState<'from' | 'to' | null>(null);
+  const [swapRotation, setSwapRotation] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,9 +57,17 @@ const App: React.FC = () => {
     setInputExpression(Number.isInteger(result) ? result.toString() : result.toFixed(2));
   };
 
-  const handleSwap = () => {
-    setFromCurrency(toCurrency);
-    setToCurrency(fromCurrency);
+  const handleSwap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsAnimating(true);
+    setSwapRotation(prev => prev + 180);
+    
+    // 短暫延遲後切換資料，配合動畫節奏
+    setTimeout(() => {
+      setFromCurrency(toCurrency);
+      setToCurrency(fromCurrency);
+      setIsAnimating(false);
+    }, 150);
   };
   
   const handleCurrencySelect = (currency: Currency) => {
@@ -133,77 +142,82 @@ const App: React.FC = () => {
           {/* 第一屏：計算機主介面 (100dvh) */}
           <section className="h-[100dvh] w-full flex flex-col snap-start shrink-0 overflow-hidden">
             
-            {/* 上半部：顯示區 (43dvh - 稍微增加一點空間給更清晰的 UI) */}
-            <div className="flex-none h-[43dvh] flex flex-col px-4 pt-4 pb-2">
+            {/* 上半部：顯示區 (43dvh) */}
+            <div className="flex-none h-[43dvh] flex flex-col px-4 pt-6 pb-2">
               
-              {/* 匯率顯示卡片 - 極致清晰設計 */}
-              <div className="flex-1 bg-[#111111] rounded-[2.2rem] px-6 py-5 relative flex flex-col justify-between border border-white/5 shadow-2xl min-h-0">
+              {/* 整合式互動卡片 */}
+              <div className="flex-1 bg-[#111111] rounded-[2.5rem] relative flex flex-col border border-white/5 shadow-2xl overflow-hidden">
                   
-                  {/* From Section */}
-                  <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] bg-zinc-900 px-2 py-0.5 rounded border border-white/5">持有</span>
-                          <span className="text-sm text-zinc-400 font-bold uppercase">{fromCurrency.code}</span>
-                        </div>
-                        {/* 匯率浮動指示 */}
-                        <div className="text-[10px] text-zinc-600 font-medium">
-                          1 {fromCurrency.code} = {rate ? rate.toFixed(4) : '...'} {toCurrency.code}
-                        </div>
-                      </div>
-                      <div className="text-4xl font-light tracking-tight overflow-x-auto no-scrollbar whitespace-nowrap text-left text-zinc-300">
-                          {inputExpression}
-                      </div>
-                  </div>
-
-                  {/* 視覺引導線 */}
-                  <div className="flex items-center gap-4">
-                      <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent to-zinc-800"></div>
-                      <div className="p-1 rounded-full bg-zinc-900 border border-zinc-800">
-                        <svg className="w-4 h-4 text-[#d97746]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  {/* 持有幣別區 (Clickable) */}
+                  <button 
+                    onClick={() => setSelectingField('from')}
+                    className={`flex-1 flex flex-col justify-center px-7 active:bg-white/[0.02] transition-all duration-300 text-left ${isAnimating ? 'opacity-40 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}
+                  >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] text-zinc-500 font-black tracking-[0.2em] bg-zinc-900 px-2 py-0.5 rounded border border-white/5 uppercase">持有</span>
+                        <span className="text-sm text-zinc-400 font-bold">{fromCurrency.flag} {fromCurrency.code}</span>
+                        <svg className="w-3 h-3 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
-                      <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent to-zinc-800"></div>
+                      <div className="text-4xl font-light tracking-tight overflow-x-auto no-scrollbar whitespace-nowrap text-zinc-200">
+                          {inputExpression}
+                      </div>
+                  </button>
+
+                  {/* 分隔線與切換按鈕 */}
+                  <div className="relative h-[1px] bg-white/5 mx-7">
+                      <button 
+                        onClick={handleSwap}
+                        style={{ transform: `translate(-50%, -50%) rotate(${swapRotation}deg)` }}
+                        className="absolute left-1/2 top-1/2 w-10 h-10 rounded-full bg-[#1c1c1c] border border-zinc-800 flex items-center justify-center text-[#d97746] shadow-xl active:scale-90 transition-all duration-500 ease-in-out z-20"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                      </button>
                   </div>
 
-                  {/* To Section */}
-                  <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <button onClick={() => getRate(fromCurrency.code, toCurrency.code)} className={`p-1 text-zinc-600 active:text-[#d97746] ${status === FetchStatus.LOADING ? 'animate-spin' : ''}`}>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                        </button>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-[#d97746] font-bold uppercase">{toCurrency.code}</span>
-                          <span className="text-[10px] text-[#d97746] font-black uppercase tracking-[0.2em] bg-[#d97746]/10 px-2 py-0.5 rounded border border-[#d97746]/20">換算</span>
-                        </div>
+                  {/* 換算幣別區 (Clickable) */}
+                  <button 
+                    onClick={() => setSelectingField('to')}
+                    className={`flex-1 flex flex-col justify-center px-7 active:bg-white/[0.02] transition-all duration-300 text-right ${isAnimating ? 'opacity-40 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}
+                  >
+                      <div className="flex items-center justify-end gap-2 mb-1">
+                        <svg className="w-3 h-3 text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        <span className="text-sm text-[#d97746] font-bold">{toCurrency.flag} {toCurrency.code}</span>
+                        <span className="text-[10px] text-[#d97746] font-black tracking-[0.2em] bg-[#d97746]/10 px-2 py-0.5 rounded border border-[#d97746]/20 uppercase">等於</span>
                       </div>
-                      <div className="text-5xl font-semibold tracking-tighter text-white overflow-x-auto no-scrollbar whitespace-nowrap text-right">
+                      <div className="text-5xl font-semibold tracking-tighter text-white overflow-x-auto no-scrollbar whitespace-nowrap">
                           {resultVal}
                       </div>
-                  </div>
-              </div>
+                  </button>
 
-              {/* 幣別切換列 */}
-              <div className="mt-3 flex-none grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
-                   <CurrencySelect selected={fromCurrency} onClick={() => setSelectingField('from')} />
-                   <button onClick={handleSwap} className="w-10 h-10 rounded-full bg-[#1c1c1c] flex items-center justify-center text-[#d97746] active:scale-90 transition-all border border-zinc-800/50 shadow-lg">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
-                   </button>
-                   <CurrencySelect selected={toCurrency} onClick={() => setSelectingField('to')} />
+                  {/* 底部狀態列 */}
+                  <div className="bg-zinc-900/40 px-7 py-2 flex justify-between items-center border-t border-white/[0.02]">
+                      <div className="text-[10px] text-zinc-500 font-bold tracking-widest">
+                        1 {fromCurrency.code} ≈ {rate ? rate.toFixed(4) : '...'} {toCurrency.code}
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); getRate(fromCurrency.code, toCurrency.code); }} 
+                        className={`text-zinc-600 hover:text-white transition-colors ${status === FetchStatus.LOADING ? 'animate-spin' : ''}`}
+                      >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                      </button>
+                  </div>
               </div>
             </div>
 
-            {/* 下半部：鍵盤區 (改為嚴格 55dvh) */}
+            {/* 下半部：鍵盤區 (55dvh) */}
             <div className="flex-none h-[55dvh] w-full px-4 pb-4 pt-1 overflow-hidden">
                <CalculatorKeypad onKeyPress={handleKeyPress} onDelete={handleDelete} onClear={handleClear} onCalculate={handleCalculate} />
             </div>
 
-            {/* 滑動指示器 (2dvh) */}
+            {/* 滑動指示器 */}
             <div className="flex-none h-[2dvh] flex justify-center items-start opacity-10">
                <div className="w-8 h-1 bg-white rounded-full"></div>
             </div>
