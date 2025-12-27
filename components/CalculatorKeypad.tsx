@@ -8,10 +8,7 @@ interface CalculatorKeypadProps {
 }
 
 const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({ 
-  onKeyPress, 
-  onDelete, 
-  onClear,
-  onCalculate 
+  onKeyPress, onDelete, onClear, onCalculate 
 }) => {
   const keys = [
     { label: 'C', type: 'function', action: onClear },
@@ -34,44 +31,31 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
     { label: '.', type: 'number', val: '.' },
   ];
 
-  // Helper function to create ripple effect
   const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
     const diameter = Math.max(button.clientWidth, button.clientHeight);
     const radius = diameter / 2;
     const rect = button.getBoundingClientRect();
-    
     const circle = document.createElement("span");
     circle.style.width = circle.style.height = `${diameter}px`;
     circle.style.left = `${event.clientX - rect.left - radius}px`;
     circle.style.top = `${event.clientY - rect.top - radius}px`;
     circle.classList.add("ripple");
-
     const ripple = button.getElementsByClassName("ripple")[0];
     if (ripple) ripple.remove();
-
     button.appendChild(circle);
     setTimeout(() => circle.remove(), 600);
   };
 
   return (
-    // Use grid with specific row sizes and full height
-    <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full px-2 pb-2 select-none">
+    <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full select-none">
       {keys.map((key, index) => {
-        let className = "glass-keypad-btn rounded-2xl flex items-center justify-center text-2xl font-light outline-none touch-manipulation cursor-pointer select-none w-full h-full";
+        let className = "glass-keypad-btn rounded-2xl flex items-center justify-center text-2xl font-light outline-none touch-manipulation cursor-pointer w-full h-full shadow-lg";
         
-        if (key.type === 'operator') {
-          className += " glass-keypad-operator"; 
-        } else if (key.type === 'function') {
-          className += " text-zinc-500 text-xl";
-        } else if (key.type === 'equal') {
-          // Row span is handled by grid-row property below, just styling here
-          className = "glass-keypad-btn glass-keypad-action rounded-2xl flex items-center justify-center text-3xl font-normal text-white outline-none cursor-pointer w-full h-full";
-        } else if (key.width) {
-          // Col span handled below
-        } else {
-           className += " text-zinc-200";
-        }
+        if (key.type === 'operator') className += " glass-keypad-operator font-medium text-xl"; 
+        else if (key.type === 'function') className += " text-zinc-600 text-lg font-medium";
+        else if (key.type === 'equal') className = "glass-keypad-btn glass-keypad-action rounded-[1.8rem] flex items-center justify-center text-4xl outline-none cursor-pointer w-full h-full shadow-2xl transition-all active:scale-95";
+        else className += " text-zinc-300 font-medium";
 
         const style: React.CSSProperties = {};
         if (key.rowSpan) style.gridRow = `span ${key.rowSpan}`;
@@ -81,11 +65,7 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
           <button
             key={index}
             style={style}
-            onClick={(e) => {
-              createRipple(e);
-              if (key.action) key.action();
-              else if (key.val) onKeyPress(key.val);
-            }}
+            onClick={(e) => { createRipple(e); key.action ? key.action() : onKeyPress(key.val!); }}
             className={className}
           >
             {key.label}
