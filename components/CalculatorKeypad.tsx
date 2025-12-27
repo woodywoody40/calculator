@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 
 interface CalculatorKeypadProps {
   onKeyPress: (key: string) => void;
@@ -37,58 +37,52 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
   // Helper function to create ripple effect
   const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
-    
-    // Create span element
-    const circle = document.createElement("span");
     const diameter = Math.max(button.clientWidth, button.clientHeight);
     const radius = diameter / 2;
-
     const rect = button.getBoundingClientRect();
     
+    const circle = document.createElement("span");
     circle.style.width = circle.style.height = `${diameter}px`;
     circle.style.left = `${event.clientX - rect.left - radius}px`;
     circle.style.top = `${event.clientY - rect.top - radius}px`;
     circle.classList.add("ripple");
 
-    // Remove existing ripples to keep DOM clean? 
-    // Actually, letting them stack looks better for rapid clicks, just remove after animation.
     const ripple = button.getElementsByClassName("ripple")[0];
-    if (ripple) {
-      ripple.remove();
-    }
+    if (ripple) ripple.remove();
 
     button.appendChild(circle);
-    
-    // Clean up after animation
-    setTimeout(() => {
-      circle.remove();
-    }, 600);
+    setTimeout(() => circle.remove(), 600);
   };
 
   return (
-    <div className="grid grid-cols-4 gap-3 px-2 select-none">
+    // Use grid with specific row sizes and full height
+    <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full px-2 pb-2 select-none">
       {keys.map((key, index) => {
-        let className = "glass-keypad-btn h-14 sm:h-16 rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-light outline-none touch-manipulation cursor-pointer select-none";
+        let className = "glass-keypad-btn rounded-2xl flex items-center justify-center text-2xl font-light outline-none touch-manipulation cursor-pointer select-none w-full h-full";
         
         if (key.type === 'operator') {
           className += " glass-keypad-operator"; 
         } else if (key.type === 'function') {
-          className += " text-zinc-500 text-lg";
+          className += " text-zinc-500 text-xl";
         } else if (key.type === 'equal') {
-          className = "glass-keypad-btn glass-keypad-action h-full rounded-2xl flex items-center justify-center text-2xl font-normal text-white row-start-4 row-end-6 col-start-4 outline-none cursor-pointer";
+          // Row span is handled by grid-row property below, just styling here
+          className = "glass-keypad-btn glass-keypad-action rounded-2xl flex items-center justify-center text-3xl font-normal text-white outline-none cursor-pointer w-full h-full";
         } else if (key.width) {
-          className += ` ${key.width}`;
+          // Col span handled below
         } else {
            className += " text-zinc-200";
         }
 
+        const style: React.CSSProperties = {};
+        if (key.rowSpan) style.gridRow = `span ${key.rowSpan}`;
+        if (key.width === 'col-span-2') style.gridColumn = 'span 2';
+
         return (
           <button
             key={index}
+            style={style}
             onClick={(e) => {
               createRipple(e);
-              // Small delay on action to let the visual feedback register? 
-              // No, instant response feels faster.
               if (key.action) key.action();
               else if (key.val) onKeyPress(key.val);
             }}

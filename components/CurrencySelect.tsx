@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState } from 'react';
+// Removed createPortal and useEffect lock to confine modal to App container
 import { Currency } from '../types';
 import { POPULAR_CURRENCIES } from '../constants';
 
@@ -12,31 +12,21 @@ interface CurrencySelectProps {
 const CurrencySelect: React.FC<CurrencySelectProps> = ({ selected, onSelect, label }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Prevent background scrolling when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [isOpen]);
-
-  // The Modal content
+  // The Modal content - now absolute positioned relative to App container
   const modalContent = (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="absolute inset-0 z-[100] flex items-end justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
         onClick={() => setIsOpen(false)}
       />
       
-      {/* Modal Content */}
-      <div className="relative w-full max-w-sm bg-[#121212] border-t sm:border border-white/10 rounded-t-[2rem] sm:rounded-3xl shadow-2xl max-h-[85vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-5 sm:zoom-in-95 duration-300 z-10">
+      {/* Modal Content - Slide Up */}
+      <div className="relative w-full h-[85%] bg-[#0f0f0f] border-t border-white/10 rounded-t-[2rem] shadow-2xl flex flex-col animate-in slide-in-from-bottom-full duration-300 ease-out z-10">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/[0.02]">
-          <h3 className="text-white text-lg font-light tracking-wide pl-1">選擇{label}</h3>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-white/[0.02]">
+          <h3 className="text-white text-lg font-medium tracking-wide pl-1">選擇{label}幣別</h3>
           <button 
             onClick={() => setIsOpen(false)}
             className="p-2 -mr-2 text-zinc-500 hover:text-white transition-colors"
@@ -48,7 +38,7 @@ const CurrencySelect: React.FC<CurrencySelectProps> = ({ selected, onSelect, lab
         </div>
 
         {/* List */}
-        <div className="overflow-y-auto p-2 space-y-1 no-scrollbar pb-10 sm:pb-2 bg-[#121212]">
+        <div className="flex-1 overflow-y-auto p-3 space-y-1 no-scrollbar pb-10 bg-[#0f0f0f]">
           {POPULAR_CURRENCIES.map((currency) => (
             <button
               key={currency.code}
@@ -56,10 +46,10 @@ const CurrencySelect: React.FC<CurrencySelectProps> = ({ selected, onSelect, lab
                 onSelect(currency);
                 setIsOpen(false);
               }}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 border border-transparent ${
+              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 border border-transparent ${
                 currency.code === selected.code
                   ? 'bg-zinc-800 text-white border-zinc-700'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900/50'
               }`}
             >
               <span className="text-3xl filter grayscale opacity-80">{currency.flag}</span>
@@ -84,32 +74,28 @@ const CurrencySelect: React.FC<CurrencySelectProps> = ({ selected, onSelect, lab
   return (
     <>
       <div className="relative w-full">
-        <label className="block text-[10px] sm:text-[11px] font-medium text-zinc-500 mb-1.5 sm:mb-2 tracking-widest pl-1">
+        <label className="block text-[10px] sm:text-[11px] font-medium text-zinc-500 mb-2 tracking-widest pl-1">
           {label}
         </label>
         <button
           onClick={() => setIsOpen(true)}
-          className="w-full flex items-center justify-between bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/20 rounded-xl sm:rounded-2xl px-3 py-3 sm:px-4 sm:py-4 transition-all duration-300 group backdrop-blur-md active:scale-[0.98]"
+          className="w-full flex items-center justify-between bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/20 rounded-2xl px-4 py-3.5 transition-all duration-300 group backdrop-blur-md active:scale-[0.98]"
         >
-          <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-            {/* Flag */}
-            <span className="text-xl sm:text-2xl filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0 leading-none" role="img" aria-label={selected.name}>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <span className="text-2xl filter grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0 leading-none" role="img" aria-label={selected.name}>
               {selected.flag}
             </span>
             <div className="text-left flex flex-col min-w-0">
-              {/* Code */}
-              <span className="font-medium text-white text-base sm:text-lg leading-tight tracking-wider truncate">
+              <span className="font-medium text-white text-lg leading-tight tracking-wider truncate">
                 {selected.code}
               </span>
-              {/* Name - HIDDEN on mobile to save space, visible on tablet+ */}
               <span className="text-[10px] text-zinc-500 font-normal hidden sm:block truncate">
                 {selected.name}
               </span>
             </div>
           </div>
-          {/* Arrow Icon */}
           <svg
-            className="w-3 h-3 sm:w-4 sm:h-4 text-zinc-600 group-hover:text-white transition-all duration-300 flex-shrink-0 ml-0.5"
+            className="w-4 h-4 text-zinc-600 group-hover:text-white transition-all duration-300 flex-shrink-0 ml-0.5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -119,8 +105,8 @@ const CurrencySelect: React.FC<CurrencySelectProps> = ({ selected, onSelect, lab
         </button>
       </div>
 
-      {/* Render Modal via Portal to break out of parent overflow/z-index constraints */}
-      {isOpen && createPortal(modalContent, document.body)}
+      {/* Render Modal conditionally inline (absolute) instead of Portal */}
+      {isOpen && modalContent}
     </>
   );
 };
