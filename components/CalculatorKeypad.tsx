@@ -42,32 +42,25 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full select-none pb-4">
+    <div className="grid grid-cols-4 grid-rows-5 gap-2.5 h-full select-none overflow-hidden">
       {keys.map((key, index) => {
-        // 使用 rounded-2xl 讓按鍵變為圓角方形，比之前的 rounded-[1.8rem] 更方
-        let className = "keypad-btn rounded-2xl flex items-center justify-center text-2xl outline-none touch-manipulation cursor-pointer w-full h-full";
+        let className = "keypad-btn rounded-2xl flex items-center justify-center text-3xl outline-none touch-manipulation cursor-pointer w-full h-full shadow-md transition-all duration-75 active:scale-95";
         
         if (key.type === 'operator') {
-             // Dark Brownish for operators (Div, Mul, Sub, Add)
-             // Matches screenshot: Brown background with Orange text
-             className += " bg-[#2a1f18] text-[#d97746] font-normal"; 
+             className += " bg-[#2a1f18] text-[#d97746] font-semibold"; 
         } else if (key.type === 'special') {
-             // Dark background for C and Backspace, matching numbers in screenshot
-             className += " bg-[#1c1c1c] text-zinc-400 font-normal";
+             className += " bg-[#1c1c1c] text-zinc-500 font-medium";
         } else if (key.type === 'equal') {
-             // Main action button (Orange)
-             className += " bg-[#d95628] text-white text-4xl shadow-lg";
+             className += " bg-[#d95628] text-white text-4xl shadow-xl active:bg-[#e06538]";
         } else {
-             // Numbers (Dark)
-             className += " bg-[#1c1c1c] text-zinc-200 font-normal";
+             className += " bg-[#1c1c1c] text-zinc-100 font-medium";
         }
 
         const style: React.CSSProperties = {};
         if (key.rowSpan) style.gridRow = `span ${key.rowSpan}`;
         if (key.width === 'col-span-2') {
             style.gridColumn = 'span 2';
-            // Align 0 to the left slightly to look balanced
-            className = className.replace('justify-center', 'justify-start pl-9');
+            className = className.replace('justify-center', 'justify-start pl-10');
         }
 
         return (
@@ -78,8 +71,8 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
             className={className}
           >
             {key.isIcon ? (
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
                 </svg>
             ) : key.label}
           </button>

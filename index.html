@@ -9,7 +9,7 @@
     
     <!-- PWA Tags -->
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="https://i.meee.com.tw/wBQngGT.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5198/5198424.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WoodyRate">
@@ -24,18 +24,24 @@
         overscroll-behavior-y: none;
         -webkit-tap-highlight-color: transparent;
         height: 100dvh;
-        overflow: hidden;
+        margin: 0;
+        overflow: hidden; /* 防止 body 層級的捲動 */
       }
       
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       
       .keypad-btn {
-        transition: all 0.15s ease;
+        transition: all 0.1s ease-out;
       }
       .keypad-btn:active {
-        transform: scale(0.92);
-        filter: brightness(1.2);
+        transform: scale(0.95);
+        filter: brightness(1.3);
+      }
+
+      .scroll-container {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
       }
     </style>
   <script type="importmap">

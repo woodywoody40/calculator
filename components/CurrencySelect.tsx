@@ -11,28 +11,23 @@ const CurrencySelect: React.FC<CurrencySelectProps> = ({ selected, onClick }) =>
   return (
       <button
         onClick={onClick}
-        className="w-full flex items-center justify-between bg-[#111111] border border-transparent hover:border-zinc-700 rounded-2xl px-4 py-3 transition-all duration-200 active:bg-zinc-900"
+        className="w-full flex items-center justify-between bg-[#111111] border border-white/5 hover:border-zinc-700 rounded-xl px-2.5 py-2 transition-all duration-200 active:bg-zinc-900 shadow-sm overflow-hidden"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-xl font-bold text-white leading-none">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-black text-white leading-none shrink-0 opacity-80">
             {selected.code.slice(0, 2)}
           </span>
-          <div className="flex flex-col items-start">
-            <span className="font-medium text-white text-base leading-tight">
-              {selected.code}
-            </span>
-            <span className="text-[10px] text-zinc-500 font-normal truncate max-w-[60px]">
-              {selected.name}
-            </span>
-          </div>
+          <span className="font-black text-white text-[13px] leading-tight tracking-wider truncate">
+            {selected.code}
+          </span>
         </div>
         <svg
-          className="w-4 h-4 text-zinc-600"
+          className="w-3 h-3 text-zinc-600 shrink-0 ml-1"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
   );
