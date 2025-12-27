@@ -42,27 +42,33 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full select-none">
+    <div className="grid grid-cols-4 grid-rows-5 gap-3 h-full select-none pb-4">
       {keys.map((key, index) => {
-        let className = "keypad-btn rounded-2xl flex items-center justify-center text-2xl outline-none touch-manipulation cursor-pointer w-full h-full";
+        // 使用 rounded-[1.8rem] 來達到「稍微方一點」但又圓潤的視覺效果
+        let className = "keypad-btn rounded-[1.8rem] flex items-center justify-center text-2xl outline-none touch-manipulation cursor-pointer w-full h-full";
         
         if (key.type === 'operator') {
-             // Brownish buttons for operators
+             // Dark Brownish for operators (Div, Mul, Sub, Add)
+             // Matches screenshot: Brown background with Orange text
              className += " bg-[#2a1f18] text-[#d97746] font-normal"; 
         } else if (key.type === 'special') {
-             // Top row helper buttons
+             // Dark background for C and Backspace, matching numbers in screenshot
              className += " bg-[#1c1c1c] text-zinc-400 font-normal";
         } else if (key.type === 'equal') {
-             // Main action button
+             // Main action button (Orange)
              className += " bg-[#d95628] text-white text-4xl shadow-lg";
         } else {
-             // Numbers
+             // Numbers (Dark)
              className += " bg-[#1c1c1c] text-zinc-200 font-normal";
         }
 
         const style: React.CSSProperties = {};
         if (key.rowSpan) style.gridRow = `span ${key.rowSpan}`;
-        if (key.width === 'col-span-2') style.gridColumn = 'span 2';
+        if (key.width === 'col-span-2') {
+            style.gridColumn = 'span 2';
+            // Align 0 to the left slightly to look balanced
+            className = className.replace('justify-center', 'justify-start pl-9');
+        }
 
         return (
           <button

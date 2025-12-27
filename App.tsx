@@ -133,7 +133,7 @@ const App: React.FC = () => {
         {/* HEADER */}
         <header className="flex-none flex justify-between items-center px-6 pt-8 pb-4">
           <h1 className="text-xl font-normal tracking-wide text-white">
-              旅遊匯率
+              Woody匯率
           </h1>
           <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-zinc-400 hover:text-white transition-colors">
              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
