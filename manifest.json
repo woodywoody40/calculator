@@ -1,14 +1,14 @@
 {
-  "short_name": "旅遊匯率",
-  "name": "旅遊匯率計算機",
+  "short_name": "Woody匯率",
+  "name": "Woody匯率",
   "icons": [
     {
-      "src": "https://i.meee.com.tw/FQUJco3.png",
+      "src": "https://i.meee.com.tw/OY4zDEF.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://i.meee.com.tw/FQUJco3.png",
+      "src": "https://i.meee.com.tw/OY4zDEF.png",
       "type": "image/png",
       "sizes": "512x512"
     }
