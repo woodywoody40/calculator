@@ -1,39 +1,52 @@
 import { ExchangeRateResponse } from "../types";
 
 /**
- * Fetches the exchange rate using the standard open.er-api.com API.
+ * 使用 rter.info API 獲取匯率。
+ * 透過 allorigins.win 代理來解決純前端環境的 CORS 限制。
  */
 export const fetchLiveExchangeRate = async (
   fromCode: string,
   toCode: string
 ): Promise<ExchangeRateResponse> => {
   try {
-    // Using open.er-api.com (ExchangeRate-API) standard endpoint
-    const response = await fetch(`https://open.er-api.com/v6/latest/${fromCode}`);
+    const targetUrl = `https://tw.rter.info/capi.php`;
+    // 使用 CORS 代理
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&ts=${Date.now()}`;
+    
+    const response = await fetch(proxyUrl);
     
     if (!response.ok) {
-      throw new Error(`API Request failed: ${response.status}`);
+      throw new Error(`Proxy Request failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const wrapper = await response.json();
+    // allorigins 會將原始 JSON 字串放在 contents 屬性中
+    const data = JSON.parse(wrapper.contents);
     
-    if (data.result !== 'success') {
-       throw new Error("API Error: " + (data['error-type'] || 'Unknown error'));
+    const getUSDToCurrencyRate = (code: string): number => {
+      if (code === 'USD') return 1;
+      const key = `USD${code}`;
+      // RTER 的資料結構中可能包含不規則字串，增加防呆
+      const entry = data[key];
+      return entry && entry.Exrate ? parseFloat(entry.Exrate) : 0;
+    };
+
+    const usdFrom = getUSDToCurrencyRate(fromCode);
+    const usdTo = getUSDToCurrencyRate(toCode);
+
+    if (usdFrom === 0 || usdTo === 0) {
+      throw new Error(`無法解析 ${fromCode} 或 ${toCode} 的匯率。`);
     }
 
-    const rate = data.rates[toCode];
-
-    if (typeof rate !== 'number') {
-       throw new Error(`Rate for ${toCode} not found in API response.`);
-    }
+    const crossRate = usdTo / usdFrom;
 
     return {
-      rate: rate,
+      rate: crossRate,
       lastUpdated: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
     };
 
   } catch (error) {
-    console.error("Error fetching exchange rate:", error);
+    console.error("RTER API Fetch Error:", error);
     throw error;
   }
 };

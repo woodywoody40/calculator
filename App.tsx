@@ -17,9 +17,9 @@ const App: React.FC = () => {
   const [selectingField, setSelectingField] = useState<'from' | 'to' | null>(null);
   const [swapRotation, setSwapRotation] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showUpdateSuccess, setShowUpdateSuccess] = useState(false); 
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  // 用於防止重複存檔的 Ref
   const lastSavedRef = useRef<string>('');
 
   useEffect(() => {
@@ -56,7 +56,7 @@ const App: React.FC = () => {
   const handleDelete = () => setInputExpression(prev => prev.length <= 1 ? '0' : prev.slice(0, -1));
   const handleClear = () => {
     setInputExpression('0');
-    lastSavedRef.current = ''; // 清除輸入時也重置最後存檔紀錄
+    lastSavedRef.current = ''; 
   };
   const handleCalculate = () => {
     const result = safeCalculate(inputExpression);
@@ -72,14 +72,14 @@ const App: React.FC = () => {
       setFromCurrency(toCurrency);
       setToCurrency(fromCurrency);
       setIsAnimating(false);
-      lastSavedRef.current = ''; // 切換幣別後允許存檔
+      lastSavedRef.current = ''; 
     }, 150);
   };
   
   const handleCurrencySelect = (currency: Currency) => {
     if (selectingField === 'from') setFromCurrency(currency);
     else if (selectingField === 'to') setToCurrency(currency);
-    lastSavedRef.current = ''; // 更換幣別後允許存檔
+    lastSavedRef.current = ''; 
   };
 
   const getRate = useCallback(async (from: string, to: string) => {
@@ -88,13 +88,18 @@ const App: React.FC = () => {
       const data = await fetchLiveExchangeRate(from, to);
       setRate(data.rate);
       setStatus(FetchStatus.SUCCESS);
+      
+      setShowUpdateSuccess(true);
+      setTimeout(() => setShowUpdateSuccess(false), 2000);
+
       localStorage.setItem(`rate_${from}_${to}`, JSON.stringify({ rate: data.rate, date: new Date().toISOString() }));
     } catch (err) {
+      console.error("Fetch failed:", err);
       const cached = localStorage.getItem(`rate_${from}_${to}`);
       if (cached) {
         const data = JSON.parse(cached);
         setRate(data.rate);
-        setStatus(FetchStatus.SUCCESS);
+        setStatus(FetchStatus.SUCCESS); // 雖然失敗但有快取，我們維持 SUCCESS 顯示快取值
       } else {
         setStatus(FetchStatus.ERROR);
       }
@@ -102,13 +107,8 @@ const App: React.FC = () => {
   }, []);
 
   const saveToHistory = useCallback(() => {
-    // 檢查基本條件
     if (!rate || calculatedValue === 0) return;
-    
-    // 生成唯一標識字串：幣別組合 + 金額
     const currentIdentity = `${fromCurrency.code}_${toCurrency.code}_${calculatedValue}`;
-    
-    // 如果跟上次存的一樣，就跳過
     if (lastSavedRef.current === currentIdentity) return;
 
     const newItem: HistoryItem = {
@@ -128,11 +128,10 @@ const App: React.FC = () => {
     });
 
     lastSavedRef.current = currentIdentity;
-  }, [rate, calculatedValue, fromCurrency.code, toCurrency.code]); // 移除對 history 的依賴
+  }, [rate, calculatedValue, fromCurrency.code, toCurrency.code]); 
 
   useEffect(() => {
     if (status === FetchStatus.SUCCESS && rate && calculatedValue > 0) {
-      // 只有在非運算過程（沒有運算符號）且不是初始狀態時才自動存檔
       if (!/[+\-*/]/.test(inputExpression) && inputExpression !== '0') {
         const timer = setTimeout(() => saveToHistory(), 1500); 
         return () => clearTimeout(timer);
@@ -201,23 +200,48 @@ const App: React.FC = () => {
                         <span className="text-sm text-[#d97746] font-bold">{toCurrency.flag} {toCurrency.code}</span>
                         <span className="text-[10px] text-[#d97746] font-black tracking-[0.2em] bg-[#d97746]/10 px-2 py-0.5 rounded border border-[#d97746]/20 uppercase">等於</span>
                       </div>
-                      <div className="text-5xl font-semibold tracking-tighter text-white overflow-x-auto no-scrollbar whitespace-nowrap">
+                      <div className={`text-5xl font-semibold tracking-tighter text-white overflow-x-auto no-scrollbar whitespace-nowrap transition-all duration-700 ${showUpdateSuccess ? 'text-green-400 scale-[1.02]' : 'text-white scale-100'}`}>
                           {resultVal}
                       </div>
                   </button>
 
-                  <div className="bg-zinc-900/40 px-7 py-2 flex justify-between items-center border-t border-white/[0.02]">
-                      <div className="text-[10px] text-zinc-500 font-bold tracking-widest">
-                        1 {fromCurrency.code} ≈ {rate ? rate.toFixed(4) : '...'} {toCurrency.code}
+                  <div className="bg-zinc-900/40 px-7 py-2.5 flex flex-col border-t border-white/[0.02] gap-1 relative overflow-hidden">
+                      {/* 背景成功同步動畫 */}
+                      <div className={`absolute inset-0 bg-green-500/10 pointer-events-none transition-opacity duration-1000 ${showUpdateSuccess ? 'opacity-100' : 'opacity-0'}`} />
+                      
+                      <div className="flex justify-between items-center w-full relative z-10">
+                          <div className={`text-[10px] font-bold tracking-widest transition-colors duration-500 ${showUpdateSuccess ? 'text-green-400' : status === FetchStatus.ERROR ? 'text-red-500' : 'text-zinc-500'}`}>
+                            {status === FetchStatus.ERROR ? '連線失敗，顯示最後數據' : `1 ${fromCurrency.code} ≈ ${rate ? rate.toFixed(4) : '...'} ${toCurrency.code}`}
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); getRate(fromCurrency.code, toCurrency.code); }} 
+                            className={`text-zinc-600 hover:text-white transition-all ${status === FetchStatus.LOADING ? 'animate-spin opacity-40' : 'active:scale-90'}`}
+                          >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                          </button>
                       </div>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); getRate(fromCurrency.code, toCurrency.code); }} 
-                        className={`text-zinc-600 hover:text-white transition-colors ${status === FetchStatus.LOADING ? 'animate-spin' : ''}`}
-                      >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                      </button>
+                      
+                      <div className="text-[8px] text-zinc-700 font-medium tracking-tight uppercase flex items-center justify-between relative z-10">
+                         <span className="opacity-50">Data by RTER.info (Proxy)</span>
+                         <div className="flex items-center gap-1.5">
+                            {showUpdateSuccess && (
+                              <span className="text-green-400 font-black animate-pulse flex items-center gap-1">
+                                <svg className="w-2.5 h-2.5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                UPDATED
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full border border-white/5">
+                               <span className={`w-1.5 h-1.5 rounded-full ${status === FetchStatus.SUCCESS ? 'bg-green-500 animate-pulse' : status === FetchStatus.ERROR ? 'bg-red-500' : 'bg-zinc-600'}`}></span>
+                               <span className={status === FetchStatus.SUCCESS ? 'text-green-500/80' : status === FetchStatus.ERROR ? 'text-red-500/80' : 'text-zinc-600'}>
+                                 {status === FetchStatus.ERROR ? 'OFFLINE' : 'LIVE'}
+                               </span>
+                            </div>
+                         </div>
+                      </div>
                   </div>
               </div>
             </div>
