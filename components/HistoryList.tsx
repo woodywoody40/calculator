@@ -34,7 +34,7 @@ const HistoryList: React.FC<HistoryListProps> = ({ history, onClear }) => {
             <div className="flex justify-between items-center mb-4">
                 <span className="text-[10px] text-zinc-600 font-bold tracking-widest uppercase">{item.timestamp}</span>
                 <span className="text-[9px] text-zinc-500 bg-black px-2 py-0.5 rounded border border-white/5 font-mono">
-                  1 {item.fromCode} = {item.rate.toFixed(4)} {item.toCode}
+                  1 {item.fromCode} = {Number(item.rate.toPrecision(6))} {item.toCode}
                 </span>
             </div>
             

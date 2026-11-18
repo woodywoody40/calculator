@@ -66,6 +66,7 @@ const CalculatorKeypad: React.FC<CalculatorKeypadProps> = ({
         return (
           <button
             key={index}
+            aria-label={key.isIcon ? '刪除末位' : key.label}
             style={style}
             onClick={() => { key.action ? key.action() : onKeyPress(key.val!); }}
             className={className}

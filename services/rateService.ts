@@ -1,52 +1,40 @@
-import { ExchangeRateResponse } from "../types";
+import { readStored, store } from '../storage';
+import { POPULAR_CURRENCIES } from '../constants';
 
-/**
- * 使用 rter.info API 獲取匯率。
- * 透過 allorigins.win 代理來解決純前端環境的 CORS 限制。
- */
-export const fetchLiveExchangeRate = async (
-  fromCode: string,
-  toCode: string
-): Promise<ExchangeRateResponse> => {
-  try {
-    const targetUrl = `https://tw.rter.info/capi.php`;
-    // 使用 CORS 代理
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&ts=${Date.now()}`;
-    
-    const response = await fetch(proxyUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Proxy Request failed: ${response.status}`);
+interface Snapshot {
+  rates: Record<string, number>;
+  updated: number;
+  expires: number;
+}
+
+function valid(data: Snapshot | null): data is Snapshot {
+  return !!data && Number.isFinite(data.updated) && data.updated > 0 &&
+    Number.isFinite(data.expires) && data.expires > data.updated &&
+    POPULAR_CURRENCIES.every(({ code }) => Number.isFinite(data.rates?.[code]) && data.rates[code] > 0);
+}
+
+export function cachedSnapshot(): Snapshot | null {
+  const data = readStored('usdRateTable');
+  return valid(data) ? data : null;
+}
+
+let pending: Promise<Snapshot> | undefined;
+export function refreshRates() {
+  if (pending) return pending;
+  pending = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch('https://open.er-api.com/v6/latest/USD', { signal: controller.signal });
+      if (!response.ok) throw Error('匯率服務暫時無法使用');
+      const data = await response.json();
+      const snapshot = { rates: data.rates, updated: data.time_last_update_unix * 1000, expires: data.time_next_update_unix * 1000 };
+      if (data.result !== 'success' || data.base_code !== 'USD' || !valid(snapshot)) throw Error('匯率資料不完整');
+      store('usdRateTable', snapshot);
+      return snapshot;
+    } finally {
+      clearTimeout(timer);
     }
-
-    const wrapper = await response.json();
-    // allorigins 會將原始 JSON 字串放在 contents 屬性中
-    const data = JSON.parse(wrapper.contents);
-    
-    const getUSDToCurrencyRate = (code: string): number => {
-      if (code === 'USD') return 1;
-      const key = `USD${code}`;
-      // RTER 的資料結構中可能包含不規則字串，增加防呆
-      const entry = data[key];
-      return entry && entry.Exrate ? parseFloat(entry.Exrate) : 0;
-    };
-
-    const usdFrom = getUSDToCurrencyRate(fromCode);
-    const usdTo = getUSDToCurrencyRate(toCode);
-
-    if (usdFrom === 0 || usdTo === 0) {
-      throw new Error(`無法解析 ${fromCode} 或 ${toCode} 的匯率。`);
-    }
-
-    const crossRate = usdTo / usdFrom;
-
-    return {
-      rate: crossRate,
-      lastUpdated: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
-    };
-
-  } catch (error) {
-    console.error("RTER API Fetch Error:", error);
-    throw error;
-  }
-};
+  })().finally(() => { pending = undefined; });
+  return pending;
+}
